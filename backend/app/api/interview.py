@@ -1,11 +1,11 @@
 from fastapi import APIRouter
-from backend.app.interview.planner import InterviewPlanner
+from backend.app.interview.interviewer import InterviewEngine
 
 router = APIRouter()
 
-planner = InterviewPlanner()
+engine = InterviewEngine()
 
 
-@router.get("/plan/{candidate_id}")
-def interview_plan(candidate_id: str):
-    return planner.create_plan(candidate_id)
+@router.post("/interview/start/{candidate_id}")
+def start(candidate_id: str):
+    return engine.start_interview(candidate_id)
