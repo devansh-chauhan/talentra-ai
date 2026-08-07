@@ -1,11 +1,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from backend.app.api.interview import router as interview_router
 
 app = FastAPI(
     title="Talentra AI",
     description="Adaptive AI Interview Agent",
     version="1.0.0"
 )
+
+app.include_router(interview_router, prefix="/api")
 
 app.add_middleware(
     CORSMiddleware,
