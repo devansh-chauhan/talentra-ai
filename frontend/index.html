@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Talentra AI — Adaptive Interview Agent</title>
+  <link rel="stylesheet" href="/app/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="logo">T</span><div><b>Talentra AI</b><small>Adaptive Interview Agent</small></div></div>
+    <a href="/docs" target="_blank" class="docs">API Docs</a>
+  </header>
+
+  <main class="shell">
+    <section id="setupView" class="card setup">
+      <div class="eyebrow">AI-POWERED TECHNICAL INTERVIEW</div>
+      <h1>Interview smarter.<br><span>Evaluate deeper.</span></h1>
+      <p>Talentra AI adapts technical questions to each candidate's performance in real time.</p>
+      <div class="formrow">
+        <label>Candidate ID<input id="candidateId" value="CAND-003"></label>
+        <button id="startBtn">Start Interview</button>
+      </div>
+      <div id="candidatePreview" class="candidate-preview"></div>
+      <div id="error" class="error"></div>
+    </section>
+
+    <section id="interviewView" class="hidden">
+      <div class="dashboard">
+        <aside class="card sidebar">
+          <div id="candidateCard"></div>
+          <div class="progressbox">
+            <div class="row"><span>Progress</span><b id="progressText">0 / 8</b></div>
+            <div class="progress"><i id="progressBar"></i></div>
+          </div>
+          <div class="status"><i></i> AI evaluator online</div>
+        </aside>
+
+        <section class="card interview">
+          <div class="row meta">
+            <span id="questionNo">QUESTION 1</span>
+            <span id="difficulty" class="pill">HARD</span>
+          </div>
+          <div id="topic" class="topic"></div>
+          <h2 id="question"></h2>
+          <div id="tools" class="chips"></div>
+          <textarea id="answer" placeholder="Type your technical answer here..."></textarea>
+          <div class="actions">
+            <span id="answerHint">Be specific. Explain your reasoning and implementation choices.</span>
+            <button id="submitBtn">Submit Answer →</button>
+          </div>
+          <div id="evaluation" class="evaluation hidden"></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="reportView" class="hidden card report">
+      <div class="eyebrow">INTERVIEW COMPLETE</div>
+      <h1 id="reportTitle">Candidate Report</h1>
+      <div class="scoreHero"><strong id="overallScore">0</strong><span>/100</span><small>Overall Score</small></div>
+      <div class="metrics" id="metrics"></div>
+      <div class="recommendation" id="recommendation"></div>
+      <div id="reportDetails"></div>
+      <button class="secondary" onclick="location.reload()">Start Another Interview</button>
+    </section>
+  </main>
+
+  <script src="/app/app.js"></script>
+</body>
+</html>
