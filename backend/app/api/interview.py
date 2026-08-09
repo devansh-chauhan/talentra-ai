@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+from requests import session
 
 from backend.app.interview.planner import InterviewPlanner
 from backend.app.interview.session_manager import InterviewSessionManager
@@ -71,29 +72,44 @@ def submit_answer(candidate_id: str, request: AnswerRequest):
     if not current_question:
         raise HTTPException(status_code=400, detail="No active question")
 
+    # 1. Evaluate answer
     evaluation = evaluator.evaluate(
-        current_question["question"],
-        request.answer,
+    current_question["question"],
+    request.answer
     )
 
-    adaptive_decision = adaptive_engine.decide_next_action(evaluation)
-
+# 2. Save answer + evaluation
     session = session_manager.submit_answer(
-        candidate_id,
-        request.answer,
-        evaluation,
+    candidate_id,
+    request.answer,
+    evaluation
     )
 
+# 3. Decide adaptive action
+    action = adaptive_engine.decide_next_action(evaluation)
+
+# 4. Check if interview is completed
     if session["completed"]:
         return {
-            "message": "Interview completed",
-            "completed": True,
-            "evaluation": evaluation,
-            "adaptive_decision": adaptive_decision,
-            "answers_submitted": len(session["answers"]),
-        }
+        "message": "Interview completed",
+        "completed": True,
+        "evaluation": evaluation,
+        "adaptive_decision": action,
+        "answers_submitted": len(session["answers"])
+    }
 
+# 5. Get next question
     next_question = session_manager.get_current_question(candidate_id)
+
+    return {
+    "message": "Answer evaluated",
+    "completed": False,
+    "evaluation": evaluation,
+    "adaptive_decision": action,
+    "next_question": next_question,
+    "question_number": session["current_index"] + 1,
+    "total_questions": len(session["questions"])
+    }
 
     # The first 8 planned questions are the interview budget.
     # Adaptive generation is used to replace the next planned question
@@ -148,53 +164,71 @@ def interview_session(candidate_id: str):
 @router.get("/interview/report/{candidate_id}")
 def interview_report(candidate_id: str):
     session = session_manager.get_session(candidate_id)
+
     if not session:
-        raise HTTPException(status_code=404, detail="Interview session not found")
-
-    evaluations = session["evaluations"]
-    if not evaluations:
-        return {
-            "candidate": session["candidate"],
-            "completed": session["completed"],
-            "answers_submitted": 0,
-            "overall_score": 0,
-            "evaluations": [],
-        }
-
-    def avg(key):
-        return round(
-            sum(int(e.get(key, 0)) for e in evaluations) / len(evaluations),
-            1,
+        raise HTTPException(
+            status_code=404,
+            detail="Interview session not found"
         )
 
-    overall = round(
-        sum(int(e.get("score", 0)) for e in evaluations) / len(evaluations)
+    if not session["completed"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Interview is not completed"
+        )
+
+    evaluations = session.get("evaluations", [])
+
+    if not evaluations:
+        raise HTTPException(
+            status_code=400,
+            detail="No evaluations available"
+        )
+
+    candidate = planner.create_plan(candidate_id)["candidate"]
+
+    def avg(key):
+        values = [
+            e.get(key, 0)
+            for e in evaluations
+        ]
+
+        return round(
+            sum(values) / len(values),
+            1
+        )
+
+    overall_score = round(
+        sum(
+            e.get("score", 0)
+            for e in evaluations
+        ) / len(evaluations)
     )
 
-    if overall >= 85:
+    if overall_score >= 80:
         recommendation = "Strong Hire"
-    elif overall >= 70:
-        recommendation = "Hire / Further Review"
-    elif overall >= 55:
-        recommendation = "Needs Follow-up"
+    elif overall_score >= 65:
+        recommendation = "Hire"
+    elif overall_score >= 50:
+        recommendation = "Consider"
     else:
-        recommendation = "Not Ready"
+        recommendation = "Reject"
 
     return {
-        "candidate": session["candidate"],
-        "completed": session["completed"],
-        "answers_submitted": len(session["answers"]),
-        "overall_score": overall,
-        "technical_correctness": avg("technical_correctness"),
+        "candidate": candidate,
+        "overall_score": overall_score,
+        "recommendation": recommendation,
+        "technical_correctness": avg(
+            "technical_correctness"
+        ),
         "understanding": avg("understanding"),
-        "practical_knowledge": avg("practical_knowledge"),
+        "practical_knowledge": avg(
+            "practical_knowledge"
+        ),
         "clarity": avg("clarity"),
         "completeness": avg("completeness"),
-        "recommendation": recommendation,
-        "evaluations": evaluations,
-        "answers": session["answers"],
+        "evaluations": evaluations
     }
-
 
 @router.delete("/interview/session/{candidate_id}")
 def reset_interview(candidate_id: str):

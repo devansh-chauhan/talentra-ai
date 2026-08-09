@@ -1,6 +1,7 @@
 class AdaptiveEngine:
+
     def decide_next_action(self, evaluation):
-        score = int(evaluation.get("score", 0))
+        score = evaluation.get("score", 0)
 
         if score >= 85:
             return {

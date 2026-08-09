@@ -64,6 +64,7 @@ class InterviewSessionManager:
         if not session:
             return None
 
+        
         current_question = self.get_current_question(candidate_id)
         if not current_question:
             session["completed"] = True
